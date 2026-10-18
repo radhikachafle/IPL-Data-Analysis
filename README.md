@@ -1,163 +1,132 @@
-# 🏏 IPL Match Win Probability Predictor
+# IPL Match Win Probability Predictor
 
-> Predicts the win probability of an IPL team chasing a target — in real time, ball by ball.
+A Flask web app that predicts the chasing team's win probability during the 2nd innings of an IPL match. You enter the match situation, and it shows the win chance for both teams.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/ipl-match-prediction/blob/main/notebooks/Ipl_data_prediction.ipynb)
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
-![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.2+-orange)
-![Status](https://img.shields.io/badge/Status-Complete-green)
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Flask](https://img.shields.io/badge/Flask-Web%20App-black)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Logistic%20Regression-orange)
 
----
+## Overview
 
-## 📌 Overview
+- Takes the current chase situation: teams, city, target, score, balls left and wickets lost.
+- Calculates runs left, wickets remaining, current run rate (CRR) and required run rate (RRR).
+- Passes these into a trained Scikit-learn pipeline.
+- Shows the win probability for the batting team and the bowling team.
 
-This project predicts the **win probability** of the batting team during the 2nd innings of an IPL T20 match. Given the current match situation — runs needed, balls remaining, wickets in hand, and run rates — the model outputs the chance of winning for both teams.
+## Dataset
 
-Built using **Logistic Regression** with a full **sklearn Pipeline** for preprocessing and prediction.
+- Ball-by-ball IPL data in `IPL.csv`.
+- 278,205 raw rows, 64 columns.
+- Only 2nd innings (chase) rows are used.
+- After cleaning: 114,185 rows.
+- The file is too large for GitHub. Download it here: `[add your Kaggle or Google Drive link]`
 
----
+## Features Used
 
-## 📊 Dataset
-
-| Detail | Info |
+| Feature | Meaning |
 |---|---|
-| Format | CSV (IPL.csv.xls) |
-| Innings used | 2nd innings only (chase scenarios) |
-| Teams included | 10 current IPL franchises |
-| Size | ~106 MB raw → cleaned to relevant rows |
+| batting_team | Team chasing the target |
+| bowling_team | Team defending |
+| city | Match venue city |
+| runs_left | Runs still needed |
+| balls_left | Legal balls remaining |
+| wickets_remaining | Wickets in hand |
+| runs_target | Target set by the 1st innings |
+| crr | Current run rate |
+| rrr | Required run rate |
 
-> 📁 Dataset is too large for GitHub.
-> Download it here: **[Add your Google Drive or Kaggle link]**
+## How It Works
 
-Team names were standardised to current franchises:
-- Delhi Daredevils → Delhi Capitals
-- Kings XI Punjab → Punjab Kings
-- Royal Challengers Bangalore → Royal Challengers Bengaluru
-- Deccan Chargers → Sunrisers Hyderabad
+1. **Filter:** keep only 2nd innings rows, current 10 franchises, rows with a known target and city.
+2. **Feature engineering:** create runs left, balls left, wickets remaining, CRR, RRR and the result (1 if the batting team won).
+3. **Preprocessing:** OneHotEncoder for team and city columns, StandardScaler for numeric columns.
+4. **Model:** Logistic Regression inside a single Scikit-learn Pipeline.
+5. **App:** Flask loads the saved pipeline (`pipe.pkl`) and returns `predict_proba` for the form input.
 
----
+## Results
 
-## 🧠 Features Used
-
-| Feature | Description |
-|---|---|
-| `batting_team` | Team currently batting (chasing) |
-| `bowling_team` | Team currently bowling (defending) |
-| `city` | Match venue city |
-| `runs_left` | Runs still needed to win |
-| `balls_left` | Legal deliveries remaining |
-| `wickets_remaining` | Wickets still in hand |
-| `runs_target` | Total target set by 1st innings |
-| `crr` | Current Run Rate |
-| `rrr` | Required Run Rate |
-
----
-
-## ⚙️ Approach
-
-1. **Data Cleaning** — filtered to 2nd innings only, removed unknown cities, dropped rows with missing targets
-2. **Feature Engineering** — calculated `runs_left`, `balls_left`, `wickets_remaining`, `crr`, `rrr`, and `result`
-3. **Preprocessing** — OneHotEncoding for categorical features, StandardScaler for numeric features via ColumnTransformer
-4. **Modeling** — Logistic Regression inside an sklearn Pipeline
-5. **Prediction UI** — interactive widget to input live match data and get win probabilities
-
----
-
-## 📈 Results
-
-| Metric | Score |
+| Item | Value |
 |---|---|
 | Model | Logistic Regression |
-| Train/Test Split | 75% / 25% |
-| Accuracy | **~XX%** *(update this after running the notebook)* |
+| Train rows | 85,638 |
+| Test rows | 28,547 |
+| Split | 75% / 25%, random |
+| Accuracy | 80.40% |
 
----
+## Limitations
 
-## 🛠️ Technologies Used
+- The split is random by row, so balls from the same match can appear in both train and test. This can make the accuracy look higher than it really is.
+- Accuracy alone is not enough here, because many late-match situations are easy to predict. Log loss and a baseline comparison are not added yet.
+- Teams that no longer exist are removed. Deccan Chargers rows are currently mapped to Sunrisers Hyderabad, which are separate franchises.
 
-- Python 3.x
-- Pandas, NumPy
-- Matplotlib
-- Scikit-learn (Pipeline, ColumnTransformer, LogisticRegression)
-- ipywidgets (interactive prediction UI)
-- Pickle (model saving)
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 ipl-match-prediction/
 ├── README.md
 ├── requirements.txt
-├── .gitignore
-├── notebooks/
-│   └── Ipl_data_prediction.ipynb
-├── data/
-│   ├── raw/               ← IPL.csv.xls (too large — see Dataset section)
-│   └── processed/         ← IPL_processed_dataset.csv (generated by notebook)
-├── models/
-│   └── pipe.pkl           ← saved trained model (generated by notebook)
-└── src/
-    └── utils.py
+├── model.py              # trains the model and saves pipe.pkl
+├── app.py                # Flask app
+├── templates/
+│   ├── index.html        # input form
+│   └── result.html       # prediction result
+├── static/
+│   └── image.png
+├── IPL.csv               # not in repo, download separately
+├── processed_dataset.csv # generated by model.py
+└── pipe.pkl              # generated by model.py
 ```
 
----
-
-## ▶️ How to Run
-
-**Option 1 — Run in Google Colab (recommended):**
-
-Click the **Open in Colab** badge at the top ↑
-
-**Option 2 — Run locally:**
+## How to Run
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/ipl-match-prediction.git
 cd ipl-match-prediction
 pip install -r requirements.txt
-jupyter notebook notebooks/Ipl_data_prediction.ipynb
 ```
 
-Then place `IPL.csv.xls` inside `data/raw/` and update the file path in Cell 2 of the notebook.
+1. Place `IPL.csv` in the project folder.
+2. Train the model (run once):
 
----
+```bash
+python model.py
+```
 
-## 🔮 Interactive Prediction
+3. Start the app:
 
-The notebook includes a **live prediction widget** — enter any match situation and get instant win probabilities for both teams:
+```bash
+python app.py
+```
 
-- Select batting team, bowling team, and city
-- Enter runs left, balls left, wickets remaining, target, CRR and RRR
-- Click **Predict Win Probability**
+4. Open `http://localhost:5000` in your browser.
 
----
+## requirements.txt
 
-## 🔍 Key Insights
+```
+flask
+pandas
+numpy
+scikit-learn
+```
 
-- Teams with a higher Required Run Rate (RRR > 12) have significantly lower win probability
-- Wickets in hand past the 15th over is a strong predictor of match outcome
-- Venue (city) has a noticeable effect on win probability due to pitch conditions
+## Technologies
 
----
+- Python, Pandas, NumPy
+- Scikit-learn (Pipeline, ColumnTransformer, LogisticRegression)
+- Flask, HTML, Tailwind CSS
+- Pickle (model saving)
 
-## 🚧 Future Improvements
+## Future Improvements
 
-- [ ] Try Random Forest or XGBoost for higher accuracy
-- [ ] Add more historical seasons to improve predictions
-- [ ] Deploy as a Streamlit web app
-- [ ] Add over-by-over win probability chart
+- [ ] Split train and test by match, not by row
+- [ ] Report log loss and compare with a simple baseline
+- [ ] Try XGBoost and compare honestly
+- [ ] Add stronger input validation in the Flask app
+- [ ] Add an over-by-over win probability chart
+- [ ] Deploy the app online
 
----
+## Author
 
-## 👤 Author
-
-**Your Name**
-- GitHub: [@your_username](https://github.com/your_username)
-- LinkedIn: [your-linkedin](https://linkedin.com/in/your-linkedin)
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+Radhika
+Final-year B.Tech, Artificial Intelligence and Data Science
+GitHub: `[your link]`
